@@ -86,6 +86,24 @@ class NeuralNetwork(nn.Module):
         out = torch.softmax(out, dim = 1)
         return out
 
+model = NeuralNetwork(image_size, hidden_size, hidden_size_2, num_classes)
+optimizer = torch.optim.Adam(model.parameters(), lr = learning_rate)
+
+# training
+num_steps = len(train_loader)
+for epoch in range(num_epochs):
+    for i, (image, label) in enumerate(train_loader):
+        image = image.reshape(-1, 28*28)
+        output = model(image)
+        loss = F.cross_entropy(output, label)
+        optimizer.zero_grad()
+        loss.backward()
+        
+        optimizer.step()
+        
+        if (i + 1) % batch_size == 0:
+            print(f"epoch {epoch + 1}/{num_epochs}, step {i + 1}/{num_steps}, loss = {loss.item()}")
+
 def read_file(filename):
     return
 
