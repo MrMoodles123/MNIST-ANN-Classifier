@@ -74,12 +74,16 @@ class NeuralNetwork(nn.Module):
         super(NeuralNetwork,self).__init__()
         self.linear1 = nn.Linear(img_size, hidden_size)
         self.relu = nn.ReLU()
-        self.linear2 = nn.Linear(hidden_size, num_classes)
+        self.linear2 = nn.Linear(hidden_size, hidden_size_2)
+        self.final = nn.Linear(hidden_size_2, num_classes)
+        self.relu = nn.ReLU()    
         
     def forward(self, x):
-        out = self.linear1(x)
-        out = self.relu(out)
-        out = self.linear2(out)
+        out = x.view(-1, 28*28)
+        out = self.relu(self.linear1(out))
+        out = self.relu(self.linear2(out))
+        out = self.final(out)    
+        out = torch.softmax(out, dim = 1)
         return out
 
 def read_file(filename):
