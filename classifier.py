@@ -25,6 +25,19 @@ download_dataset = False
 train_mnist = datasets.MNIST(DATA_DIR, train=True, transform = transforms.ToTensor(), download=download_dataset)
 test_mnist = datasets.MNIST(DATA_DIR, train=False, transform = transforms.ToTensor(), download=download_dataset)
 
+class NeuralNetwork(nn.Module):
+    def __init__(self, img_size, hidden_size, num_classes):
+        super(NeuralNetwork,self).__init__()
+        self.linear1 = nn.Linear(img_size, hidden_size)
+        self.relu = nn.ReLU()
+        self.linear2 = nn.Linear(hidden_size, num_classes)
+        
+    def forward(self, x):
+        out = self.linear1(x)
+        out = self.relu(out)
+        out = self.linear2(out)
+        return out
+
 print(train_mnist)
 print(test_mnist)
 
