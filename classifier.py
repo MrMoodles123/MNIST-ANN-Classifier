@@ -103,6 +103,18 @@ for epoch in range(num_epochs):
         
         if (i + 1) % batch_size == 0:
             print(f"epoch {epoch + 1}/{num_epochs}, step {i + 1}/{num_steps}, loss = {loss.item()}")
+            # validation accuracy testing
+            correct = 0
+            total = 0
+            for images, labels in val_loader:
+                images = images.reshape(-1, 28*28)
+                outputs = model(images)
+                _, predicted = torch.max(outputs.data, 1)
+                total += labels.size(0)
+                correct += (predicted == labels).sum()
+                
+            accuracy = 100.00 * correct.item() / total
+            print(f"Validation Accuracy: {accuracy} %")
 
 def read_file(filename):
     return
