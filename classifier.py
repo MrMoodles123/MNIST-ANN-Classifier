@@ -78,27 +78,25 @@ class NeuralNetwork(nn.Module):
     def __init__(self, img_size, hidden_size, hidden_size_2, num_classes, dropout_prob):
         super(NeuralNetwork, self).__init__()
         
-        # 2 hidden layers
-        self.linear1 = nn.Linear(img_size, hidden_size)
-        self.dropout1 = nn.Dropout(dropout_prob)
-        self.linear2 = nn.Linear(hidden_size, hidden_size_2)
-        self.dropout2 = nn.Dropout(dropout_prob)
-        self.final = nn.Linear(hidden_size_2, num_classes)
-        self.relu = nn.ReLU()        
+        self.linear1 = nn.Linear(img_size, hidden_size) # linear layer 1
+        self.dropout1 = nn.Dropout(dropout_prob) # dropout layer 1
+        self.linear2 = nn.Linear(hidden_size, hidden_size_2) # linear layer 2
+        self.dropout2 = nn.Dropout(dropout_prob) # dropout layer 2
+        self.final = nn.Linear(hidden_size_2, num_classes) # output layer
+        self.relu = nn.ReLU() # ReLU layer       
         
     def forward(self, x):   
-        #2 hidden layers
         out = x.view(-1, 28*28)
-        out = self.relu(self.linear1(out))
-        out = self.dropout1(out)
-        out = self.relu(self.linear2(out))
-        out = self.dropout2(out)
+        out = self.relu(self.linear1(out)) # apply ReLU accross hidden layer 1
+        out = self.dropout1(out) # apply dropout accross hidden layer 1
+        out = self.relu(self.linear2(out)) # apply ReLU accross hidden layer 2
+        out = self.dropout2(out) # apply dropout accross hidden layer 2
         out = self.final(out)    
-        out = torch.softmax(out, dim = 1)
+        out = torch.softmax(out, dim = 1) # apply softmax accross last layer
         return out
     
-model = NeuralNetwork(image_size, hidden_size, hidden_size_2, num_classes, dropout_prob)
-optimizer = torch.optim.Adam(model.parameters(), lr = learning_rate, weight_decay = weight_decay)
+model = NeuralNetwork(image_size, hidden_size, hidden_size_2, num_classes, dropout_prob) # instantiate model
+optimizer = torch.optim.Adam(model.parameters(), lr = learning_rate, weight_decay = weight_decay) # create Adam Optimization func
 
 # training
 num_steps = len(train_loader)
@@ -106,36 +104,38 @@ for epoch in range(num_epochs):
     for i, (image, label) in enumerate(train_loader):
         image = image.reshape(-1, 28*28)
         output = model(image)
-        loss = F.cross_entropy(output, label)
-        optimizer.zero_grad()
-        loss.backward()
+        loss = F.cross_entropy(output, label) # cross entropy loss function
         
+        # calculate L2 regularization penalty
+        regularization_loss = 0.0
+        for param in model.parameters():
+            regularization_loss += torch.norm(param, 2) 
+        total_loss = loss + weight_decay * regularization_loss
+        
+        # compute back propagation and step the optimizer forward
+        optimizer.zero_grad()
+        total_loss.backward()
         optimizer.step()
         
+        # periodically print out loss and validation accuracy
         if (i + 1) % batch_size == 0:
-            print(f"epoch {epoch + 1}/{num_epochs}, step {i + 1}/{num_steps}, loss = {loss.item()}")
+            print(f"epoch {epoch + 1}/{num_epochs}, step {i + 1}/{num_steps}, loss = {total_loss.item()}")
+            
             # validation accuracy testing
-            correct = 0
-            total = 0
-            for images, labels in val_loader:
-                images = images.reshape(-1, 28*28)
-                outputs = model(images)
-                _, predicted = torch.max(outputs.data, 1)
-                total += labels.size(0)
-                correct += (predicted == labels).sum()
-                
-            accuracy = 100.00 * correct.item() / total
-            print(f"Validation Accuracy: {accuracy} %")
+            model.eval()
+            with torch.no_grad():
+                correct = 0
+                total = 0
+                for images, labels in val_loader:
+                    images = images.reshape(-1, 28*28)
+                    outputs = model(images)
+                    _, predicted = torch.max(outputs.data, 1)
+                    total += labels.size(0)
+                    correct += (predicted == labels).sum()
+                    
+                accuracy = 100.00 * correct.item() / total
+                print(f"Validation Accuracy: {accuracy}%")
+            
+            model.train()
 
-def read_file(filename):
-    return
 
-def main():
-    while True:
-        input_str = input("Please enter a filepath:\n> ")
-        if input_str.strip().lower() == "exit":
-            print("Exiting...")
-            break
-        
-if __name__ == "__main__":
-    main()
