@@ -1,6 +1,7 @@
 # CSC3022F ML A1
 # Mahir Moodaley (MDLMAH007)
-# 16 April 2024
+# 21 April 2024
+
 import torch
 import torch.nn as nn
 from torch.nn import functional as F
@@ -10,16 +11,20 @@ import matplotlib.pyplot as plt
 import numpy as np
 import random
 import torchvision.transforms as transforms
+from PIL import Image
 
 # constant variables
 image_size = 28*28
-hidden_size = 100
-hidden_size_2 = 50
 num_classes = 10
-num_epochs = 10
-batch_size = 64
-learning_rate = 0.001
+weight_decay = 1e-5  # L2 regularization weight decay
 
+# hyperparameters
+batch_size = 64
+hidden_size = 512
+hidden_size_2 = 64
+dropout_prob = 0.3 # probability of dropout 
+num_epochs = 15
+learning_rate = 0.0001
 
 # Load MNIST from file
 DATA_DIR = "."
@@ -70,24 +75,30 @@ val_loader = torch.utils.data.DataLoader(dataset=val_dataset, batch_size=batch_s
 test_loader = torch.utils.data.DataLoader(dataset=test_dataset, batch_size=batch_size, shuffle=False)
 
 class NeuralNetwork(nn.Module):
-    def __init__(self, img_size, hidden_size, num_classes):
-        super(NeuralNetwork,self).__init__()
-        self.linear1 = nn.Linear(img_size, hidden_size)
-        self.relu = nn.ReLU()
-        self.linear2 = nn.Linear(hidden_size, hidden_size_2)
-        self.final = nn.Linear(hidden_size_2, num_classes)
-        self.relu = nn.ReLU()    
+    def __init__(self, img_size, hidden_size, hidden_size_2, num_classes, dropout_prob):
+        super(NeuralNetwork, self).__init__()
         
-    def forward(self, x):
+        # 2 hidden layers
+        self.linear1 = nn.Linear(img_size, hidden_size)
+        self.dropout1 = nn.Dropout(dropout_prob)
+        self.linear2 = nn.Linear(hidden_size, hidden_size_2)
+        self.dropout2 = nn.Dropout(dropout_prob)
+        self.final = nn.Linear(hidden_size_2, num_classes)
+        self.relu = nn.ReLU()        
+        
+    def forward(self, x):   
+        #2 hidden layers
         out = x.view(-1, 28*28)
         out = self.relu(self.linear1(out))
+        out = self.dropout1(out)
         out = self.relu(self.linear2(out))
+        out = self.dropout2(out)
         out = self.final(out)    
         out = torch.softmax(out, dim = 1)
         return out
-
-model = NeuralNetwork(image_size, hidden_size, hidden_size_2, num_classes)
-optimizer = torch.optim.Adam(model.parameters(), lr = learning_rate)
+    
+model = NeuralNetwork(image_size, hidden_size, hidden_size_2, num_classes, dropout_prob)
+optimizer = torch.optim.Adam(model.parameters(), lr = learning_rate, weight_decay = weight_decay)
 
 # training
 num_steps = len(train_loader)
