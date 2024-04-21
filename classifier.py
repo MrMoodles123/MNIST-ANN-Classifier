@@ -55,9 +55,9 @@ X_train = np.delete(X_train, indices, axis=0)
 y_train = np.delete(y_train, indices, axis=0)
 
 # Reshape the data
-X_train = X_train.reshape(-1, 28*28)
-X_valid = X_valid.reshape(-1, 28*28)
-X_test = X_test.reshape(-1, 28*28)
+X_train = X_train.reshape(-1, image_size)
+X_valid = X_valid.reshape(-1, image_size)
+X_test = X_test.reshape(-1, image_size)
 
 train_dataset = torch.utils.data.TensorDataset(X_train, y_train)
 val_dataset = torch.utils.data.TensorDataset(X_valid, y_valid)
@@ -94,6 +94,7 @@ optimizer = torch.optim.Adam(model.parameters(), lr = learning_rate, weight_deca
 # training
 num_steps = len(train_loader)
 for epoch in range(num_epochs):
+    epoch_loss = 0.0
     for i, (image, label) in enumerate(train_loader):
         image = image.reshape(-1, 28*28)
         output = model(image)
@@ -104,6 +105,7 @@ for epoch in range(num_epochs):
         for param in model.parameters():
             regularization_loss += torch.norm(param, 2) 
         total_loss = loss + weight_decay * regularization_loss
+        epoch_loss += total_loss.item()
         
         # compute back propagation and step the optimizer forward
         optimizer.zero_grad()
@@ -131,7 +133,7 @@ for epoch in range(num_epochs):
                 print(f"Validation Accuracy: {accuracy}%")
                 model.train()
             
-    # accuracy after each epoch
+    # accuracy and loss after each epoch
     model.eval()
     with torch.no_grad():
         correct = 0
@@ -145,9 +147,11 @@ for epoch in range(num_epochs):
             correct += (predicted == labels).sum()
             
         accuracy = 100.00 * correct.item() / total
-        print(f"Validation Accuracy after epoch {epoch + 1}: {accuracy}%\n")    
+        print(f"Validation Accuracy after epoch {epoch + 1}: {accuracy}%") 
+        ave_loss = "{:.4f}".format(epoch_loss / num_steps)
+        print(f"Average Loss for epoch {epoch + 1}: {ave_loss}\n")
         model.train()
-            
+        
 # testing
 model.eval()
 with torch.no_grad():
@@ -165,7 +169,7 @@ with torch.no_grad():
     accuracy = 100.00 * num_correct / total
     print(f"Test Accuracy on 10000 images: {accuracy}%")
     print("Done!\n")
-    
+
 # loop to take in img file path from user and predict the label (i.e what the number is)
 while True:
         input_str = input("Please enter a filepath:\n> ")
@@ -190,4 +194,3 @@ while True:
         except:
             print(f"File '{input_str}' Not Found!")
             continue
-
