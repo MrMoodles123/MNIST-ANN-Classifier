@@ -6,14 +6,12 @@ import torch
 import torch.nn as nn
 from torch.nn import functional as F
 from torchvision import datasets
-from matplotlib.pyplot import imshow
-import matplotlib.pyplot as plt
+import torchvision.transforms as transforms
 import numpy as np
 import random
-import torchvision.transforms as transforms
 from PIL import Image
 
-# constant variables
+# constants
 image_size = 28*28
 num_classes = 10
 weight_decay = 1e-5  # L2 regularization weight decay
@@ -119,7 +117,8 @@ for epoch in range(num_epochs):
         
         # periodically print out loss and validation accuracy
         if (i + 1) % batch_size == 0:
-            print(f"epoch {epoch + 1}/{num_epochs}, step {i + 1}/{num_steps}, loss = {total_loss.item()}")
+            rounded_loss = "{:.4f}".format(total_loss.item())
+            print(f"Epoch: {epoch + 1}/{num_epochs}, Step: {i + 1}/{num_steps}, Total loss: {rounded_loss}")
             
             # validation accuracy testing
             model.eval()
@@ -137,5 +136,22 @@ for epoch in range(num_epochs):
                 print(f"Validation Accuracy: {accuracy}%")
             
             model.train()
-
+            
+# testing
+model.eval()
+with torch.no_grad():
+    num_correct = 0
+    total = 0
+    
+    for image, label in test_loader:
+        image = image.reshape(-1, 28*28)
+        output = model(image)
+        
+        _,prediction = torch.max(output.data, 1)
+        total += label.size(0)
+        num_correct += (prediction == label).sum().item()
+        
+    accuracy = 100.00 * num_correct / total
+    print(f"Test Accuracy on 10000 images: {accuracy}%")
+    print("Done!\n")
 
