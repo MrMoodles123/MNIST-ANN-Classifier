@@ -30,14 +30,9 @@ download_dataset = False
 train_mnist = datasets.MNIST(DATA_DIR, train=True, transform = transforms.ToTensor(), download=download_dataset)
 test_mnist = datasets.MNIST(DATA_DIR, train=False, transform = transforms.ToTensor(), download=download_dataset)
 
-# Load MNIST from file
-DATA_DIR = "."
-download_dataset = False
-train_mnist = datasets.MNIST(DATA_DIR, train=True, transform = transforms.ToTensor(), download=download_dataset)
-test_mnist = datasets.MNIST(DATA_DIR, train=False, transform = transforms.ToTensor(), download=download_dataset)
-
 print(train_mnist)
 print(test_mnist)
+print()
 
 # Create variables for MNIST data
 X_train = train_mnist.data.float()
@@ -118,7 +113,7 @@ for epoch in range(num_epochs):
         # periodically print out loss and validation accuracy
         if (i + 1) % batch_size == 0:
             rounded_loss = "{:.4f}".format(total_loss.item())
-            print(f"Epoch: {epoch + 1}/{num_epochs}, Step: {i + 1}/{num_steps}, Total loss: {rounded_loss}")
+            print(f"Epoch: {epoch + 1}/{num_epochs}, Step: {i + 1}/{num_steps}, Loss: {rounded_loss}")
             
             # validation accuracy testing
             model.eval()
@@ -134,8 +129,24 @@ for epoch in range(num_epochs):
                     
                 accuracy = 100.00 * correct.item() / total
                 print(f"Validation Accuracy: {accuracy}%")
+                model.train()
             
-            model.train()
+    # accuracy after each epoch
+    model.eval()
+    with torch.no_grad():
+        correct = 0
+        total = 0            
+        
+        for images, labels in val_loader:
+            images = images.reshape(-1, 28*28)
+            outputs = model(images)
+            _, predicted = torch.max(outputs.data, 1)
+            total += labels.size(0)
+            correct += (predicted == labels).sum()
+            
+        accuracy = 100.00 * correct.item() / total
+        print(f"Validation Accuracy after epoch {epoch + 1}: {accuracy}%\n")    
+        model.train()
             
 # testing
 model.eval()
@@ -154,4 +165,29 @@ with torch.no_grad():
     accuracy = 100.00 * num_correct / total
     print(f"Test Accuracy on 10000 images: {accuracy}%")
     print("Done!\n")
+    
+# loop to take in img file path from user and predict the label (i.e what the number is)
+while True:
+        input_str = input("Please enter a filepath:\n> ")
+        if input_str.strip().lower() == "exit":
+            print("Exiting...")
+            break
+        # open jpeg image
+        try:
+            image = Image.open(input_str) 
+            transform = transforms.ToTensor() 
+            tensor_image = transform(image) # transform image into a tensor
+            tensor_image = tensor_image.unsqueeze(0)
+
+            # pass img through model
+            model.eval()
+            with torch.no_grad():
+                output = model(torch.tensor(tensor_image).view(-1, 1))
+            
+                # get and print prediction
+                _, prediction = torch.max(output, 1)
+                print("Classifier: ", prediction.item())    
+        except:
+            print(f"File '{input_str}' Not Found!")
+            continue
 
